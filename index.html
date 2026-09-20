@@ -1,0 +1,732 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>CYBERWORD - Decodificação Neon</title>
+  
+  <!-- Configurações PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0b0f19">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="icon-192.png">
+
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card-bg: #111827;
+      --cyan: #38bdf8;
+      --magenta: #f43f5e;
+      --green: #22c55e;
+      --yellow: #eab308;
+      --text: #f8fafc;
+      --muted: #475569;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(10px, 3vw, 20px);
+      padding-top: max(clamp(10px, 3vw, 20px), env(safe-area-inset-top));
+      padding-bottom: max(clamp(10px, 3vw, 20px), env(safe-area-inset-bottom));
+      padding-left: max(clamp(10px, 3vw, 20px), env(safe-area-inset-left));
+      padding-right: max(clamp(10px, 3vw, 20px), env(safe-area-inset-right));
+    }
+
+    .container {
+      width: 100%;
+      max-width: 600px;
+      background: var(--card-bg);
+      border: 2px solid var(--cyan);
+      border-radius: 16px;
+      padding: clamp(14px, 4vw, 24px);
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: clamp(12px, 2.5vw, 20px);
+    }
+
+    header {
+      text-align: center;
+    }
+
+    h1 {
+      font-size: clamp(1.6rem, 5vw, 2.2rem);
+      color: var(--cyan);
+      text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+      letter-spacing: 3px;
+    }
+
+    .category-tag {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 4px 14px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid var(--cyan);
+      border-radius: 20px;
+      font-size: clamp(0.75rem, 2.5vw, 0.85rem);
+      color: var(--cyan);
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Core de Energia SVG */
+    .core-container {
+      width: clamp(110px, 30vw, 170px);
+      height: clamp(110px, 30vw, 170px);
+      position: relative;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .energy-ring {
+      fill: none;
+      stroke: var(--muted);
+      stroke-width: 8;
+    }
+
+    .energy-bar {
+      fill: none;
+      stroke: var(--cyan) !important;
+      stroke-width: 10;
+      stroke-linecap: round;
+      transition: stroke 0.3s, opacity 0.3s, filter 0.3s;
+      filter: drop-shadow(0 0 8px var(--cyan)) !important;
+      opacity: 1;
+    }
+
+    .energy-bar.off {
+      stroke: #1e293b !important;
+      filter: none !important;
+      opacity: 0.25;
+    }
+
+    .energy-bar.warning {
+      stroke: var(--yellow) !important;
+      filter: drop-shadow(0 0 8px var(--yellow)) !important;
+    }
+
+    .energy-bar.critical {
+      stroke: var(--magenta) !important;
+      filter: drop-shadow(0 0 8px var(--magenta)) !important;
+    }
+
+    .core-text {
+      font-size: clamp(1rem, 3vw, 1.2rem);
+      font-weight: bold;
+      fill: var(--text);
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    /* Palavra Secreta */
+    .word-display {
+      display: flex;
+      gap: clamp(4px, 1.5vw, 8px);
+      flex-wrap: wrap;
+      justify-content: center;
+      margin: 5px 0;
+      min-height: 48px;
+    }
+
+    .letter-box {
+      width: clamp(26px, 7vw, 36px);
+      height: clamp(38px, 9vw, 48px);
+      border-bottom: 3px solid var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(1.2rem, 4vw, 1.6rem);
+      font-weight: bold;
+      color: var(--text);
+      text-shadow: 0 0 8px var(--cyan);
+      text-transform: uppercase;
+    }
+
+    /* Teclado Virtual */
+    .keyboard {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(4px, 1.2vw, 6px);
+      justify-content: center;
+      width: 100%;
+    }
+
+    .key {
+      background: #1e293b;
+      border: 1px solid var(--muted);
+      color: var(--text);
+      font-size: clamp(0.85rem, 2.5vw, 1rem);
+      font-weight: bold;
+      padding: clamp(8px, 2vw, 12px) 0;
+      flex: 1 0 calc(10% - 6px);
+      max-width: 44px;
+      min-width: 30px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease-in-out;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .key:active:not(:disabled) {
+      transform: scale(0.92);
+    }
+
+    .key:hover:not(:disabled) {
+      border-color: var(--cyan);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+
+    .key:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+
+    .key.correct {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    .key.wrong {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: var(--magenta);
+      color: var(--magenta);
+    }
+
+    /* Controles e Feedback */
+    .action-btn {
+      background: transparent;
+      border: 2px solid var(--cyan);
+      color: var(--cyan);
+      padding: clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 28px);
+      font-size: clamp(0.9rem, 2.8vw, 1rem);
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 1px;
+    }
+
+    .action-btn:hover {
+      background: var(--cyan);
+      color: var(--bg);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+
+    .action-btn.pulse {
+      animation: pulseGlow 1.5s infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      from {
+        box-shadow: 0 0 5px var(--cyan);
+      }
+      to {
+        box-shadow: 0 0 18px var(--cyan);
+      }
+    }
+
+    .message {
+      font-size: clamp(0.95rem, 3vw, 1.1rem);
+      font-weight: bold;
+      min-height: 24px;
+      text-align: center;
+    }
+
+    .message.win { color: var(--green); text-shadow: 0 0 8px var(--green); }
+    .message.lose { color: var(--magenta); text-shadow: 0 0 8px var(--magenta); }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>CYBERWORD</h1>
+      <div id="category" class="category-tag">Categoria</div>
+    </header>
+
+    <!-- Visualizador do Núcleo de Energia -->
+    <div class="core-container">
+      <svg viewBox="0 0 100 100">
+        <!-- Anel de Fundo -->
+        <circle class="energy-ring" cx="50" cy="50" r="40" />
+        
+        <!-- 6 Barras de Energia -->
+        <path id="bar-1" class="energy-bar" d="M 50 10 A 40 40 0 0 1 84.6 30" />
+        <path id="bar-2" class="energy-bar" d="M 84.6 30 A 40 40 0 0 1 84.6 70" />
+        <path id="bar-3" class="energy-bar" d="M 84.6 70 A 40 40 0 0 1 50 90" />
+        <path id="bar-4" class="energy-bar" d="M 50 90 A 40 40 0 0 1 15.4 70" />
+        <path id="bar-5" class="energy-bar" d="M 15.4 70 A 40 40 0 0 1 15.4 30" />
+        <path id="bar-6" class="energy-bar" d="M 15.4 30 A 40 40 0 0 1 50 10" />
+
+        <text id="core-status" class="core-text" x="50" y="52">100%</text>
+      </svg>
+    </div>
+
+    <!-- Exibição da Palavra -->
+    <div id="word-display" class="word-display"></div>
+
+    <!-- Mensagem de Status -->
+    <div id="message" class="message"></div>
+
+    <!-- Teclado Virtual -->
+    <div id="keyboard" class="keyboard"></div>
+
+    <!-- Botão de Ação / Jogar Novamente -->
+    <button id="action-btn" class="action-btn" onclick="initGame()">NOVA PALAVRA</button>
+  </div>
+
+  <script>
+    const WORDS_DATABASE = [
+      // Tecnologia (20)
+      { word: "ALGORITMO", category: "Tecnologia" },
+      { word: "CIRCUITO", category: "Tecnologia" },
+      { word: "SERVIDOR", category: "Tecnologia" },
+      { word: "HARDWARE", category: "Tecnologia" },
+      { word: "SOFTWARE", category: "Tecnologia" },
+      { word: "CRIPTOGRAFIA", category: "Tecnologia" },
+      { word: "INTERNET", category: "Tecnologia" },
+      { word: "PROCESSADOR", category: "Tecnologia" },
+      { word: "COMPILADOR", category: "Tecnologia" },
+      { word: "INTERFACE", category: "Tecnologia" },
+      { word: "PROGRAMAÇÃO", category: "Tecnologia" },
+      { word: "SISTEMA", category: "Tecnologia" },
+      { word: "MEMÓRIA", category: "Tecnologia" },
+      { word: "FIREWALL", category: "Tecnologia" },
+      { word: "PROTOCOLOS", category: "Tecnologia" },
+      { word: "AUTOMAÇÃO", category: "Tecnologia" },
+      { word: "MICROCHIP", category: "Tecnologia" },
+      { word: "FIBRA", category: "Tecnologia" },
+      { word: "ROTEADOR", category: "Tecnologia" },
+      { word: "TELEMETRIA", category: "Tecnologia" },
+
+      // Física (20)
+      { word: "QUÂNTICO", category: "Física" },
+      { word: "ENERGIA", category: "Física" },
+      { word: "GRAVIDADE", category: "Física" },
+      { word: "FÓTON", category: "Física" },
+      { word: "NÊUTRON", category: "Física" },
+      { word: "RELATIVIDADE", category: "Física" },
+      { word: "TERMODINÂMICA", category: "Física" },
+      { word: "MAGNETISMO", category: "Física" },
+      { word: "ENTROPIA", category: "Física" },
+      { word: "CINÉTICA", category: "Física" },
+      { word: "INÉRCIA", category: "Física" },
+      { word: "ISÓTOPO", category: "Física" },
+      { word: "ELÉCTRON", category: "Física" },
+      { word: "FUSÃO", category: "Física" },
+      { word: "RADIAÇÃO", category: "Física" },
+      { word: "VELOCIDADE", category: "Física" },
+      { word: "ACELERAÇÃO", category: "Física" },
+      { word: "ESPECTRO", category: "Física" },
+      { word: "MANTRA", category: "Física" },
+      { word: "DENSIDADE", category: "Física" },
+
+      // Química (20)
+      { word: "MOLÉCULA", category: "Química" },
+      { word: "REAÇÃO", category: "Química" },
+      { word: "CATALISADOR", category: "Química" },
+      { word: "POLÍMERO", category: "Química" },
+      { word: "ÂTOMO", category: "Química" },
+      { word: "SOLUÇÃO", category: "Química" },
+      { word: "ELEMENTO", category: "Química" },
+      { word: "LIGAÇÃO", category: "Química" },
+      { word: "OXIDAÇÃO", category: "Química" },
+      { word: "SÍNTESE", category: "Química" },
+      { word: "SOLVENTE", category: "Química" },
+      { word: "ÁCIDO", category: "Química" },
+      { word: "ALCALINO", category: "Química" },
+      { word: "ORGÂNICA", category: "Química" },
+      { word: "VALÊNCIA", category: "Química" },
+      { word: "ELETRODO", category: "Química" },
+      { word: "MOLARIDADE", category: "Química" },
+      { word: "DESTILAÇÃO", category: "Química" },
+      { word: "COMBUSTÃO", category: "Química" },
+      { word: "PRECIPITADO", category: "Química" },
+
+      // Matemática (20)
+      { word: "TEOREMA", category: "Matemática" },
+      { word: "MATRIZ", category: "Matemática" },
+      { word: "GEOMETRIA", category: "Matemática" },
+      { word: "INTEGRAL", category: "Matemática" },
+      { word: "EQUAÇÃO", category: "Matemática" },
+      { word: "VETOR", category: "Matemática" },
+      { word: "DERIVADA", category: "Matemática" },
+      { word: "ÁLGEBRA", category: "Matemática" },
+      { word: "LOGARITMO", category: "Matemática" },
+      { word: "FRACTAL", category: "Matemática" },
+      { word: "TRIGONOMETRIA", category: "Matemática" },
+      { word: "ESTATÍSTICA", category: "Matemática" },
+      { word: "PROBABILIDADE", category: "Matemática" },
+      { word: "AXIOMA", category: "Matemática" },
+      { word: "POLINÔMIO", category: "Matemática" },
+      { word: "GEODESIA", category: "Matemática" },
+      { word: "ASSÍNTOTA", category: "Matemática" },
+      { word: "HIPÉRBOLE", category: "Matemática" },
+      { word: "DETERMINANTE", category: "Matemática" },
+      { word: "FATORIAL", category: "Matemática" },
+
+      // Cinema Sci-Fi (20)
+      { word: "MATRIX", category: "Cinema Sci-Fi" },
+      { word: "AVATAR", category: "Cinema Sci-Fi" },
+      { word: "INTERSTELAR", category: "Cinema Sci-Fi" },
+      { word: "CYBERPUNK", category: "Cinema Sci-Fi" },
+      { word: "TERMINATOR", category: "Cinema Sci-Fi" },
+      { word: "INCEPTION", category: "Cinema Sci-Fi" },
+      { word: "TRON", category: "Cinema Sci-Fi" },
+      { word: "STARWARS", category: "Cinema Sci-Fi" },
+      { word: "STARTREK", category: "Cinema Sci-Fi" },
+      { word: "ALIEN", category: "Cinema Sci-Fi" },
+      { word: "BLADERUNNER", category: "Cinema Sci-Fi" },
+      { word: "DUNA", category: "Cinema Sci-Fi" },
+      { word: "GRAVIDADE", category: "Cinema Sci-Fi" },
+      { word: "PROMETHEUS", category: "Cinema Sci-Fi" },
+      { word: "SOLARIS", category: "Cinema Sci-Fi" },
+      { word: "TENET", category: "Cinema Sci-Fi" },
+      { word: "GODZILLA", category: "Cinema Sci-Fi" },
+      { word: "ROBOCOP", category: "Cinema Sci-Fi" },
+      { word: "PREDADOR", category: "Cinema Sci-Fi" },
+      { word: "GATTACA", category: "Cinema Sci-Fi" },
+
+      // Cultura Pop (20)
+      { word: "BEATLES", category: "Cultura Pop" },
+      { word: "QUEEN", category: "Cultura Pop" },
+      { word: "METALLICA", category: "Cultura Pop" },
+      { word: "STRANGERTHINGS", category: "Cultura Pop" },
+      { word: "TITANIC", category: "Cultura Pop" },
+      { word: "AVENGERS", category: "Cultura Pop" },
+      { word: "NIRVANA", category: "Cultura Pop" },
+      { word: "BATMAN", category: "Cultura Pop" },
+      { word: "SPIDERMAN", category: "Cultura Pop" },
+      { word: "COLDPLAY", category: "Cultura Pop" },
+      { word: "DAFT PUNK", category: "Cultura Pop" },
+      { word: "GORILLAZ", category: "Cultura Pop" },
+      { word: "IRON MAIDEN", category: "Cultura Pop" },
+      { word: "SIMPSONS", category: "Cultura Pop" },
+      { word: "SEINFELD", category: "Cultura Pop" },
+      { word: "FRIENDS", category: "Cultura Pop" },
+      { word: "PINK FLOYD", category: "Cultura Pop" },
+      { word: "TALKING HEADS", category: "Cultura Pop" },
+      { word: "GAME OF THRONES", category: "Cultura Pop" },
+      { word: "BREAKING BAD", category: "Cultura Pop" },
+
+      // Geografia (20)
+      { word: "HEMISFÉRIO", category: "Geografia" },
+      { word: "CONTINENTE", category: "Geografia" },
+      { word: "ATMOSFERA", category: "Geografia" },
+      { word: "EQUADOR", category: "Geografia" },
+      { word: "ASTRONAUTA", category: "Geografia" },
+      { word: "CARTOGRAFIA", category: "Geografia" },
+      { word: "MERIDIANO", category: "Geografia" },
+      { word: "PARALELO", category: "Geografia" },
+      { word: "TERREMOTO", category: "Geografia" },
+      { word: "VULCANISMO", category: "Geografia" },
+      { word: "GLACIAR", category: "Geografia" },
+      { word: "HIDROGRAFIA", category: "Geografia" },
+      { word: "TOPOGRAFIA", category: "Geografia" },
+      { word: "BIOSFERA", category: "Geografia" },
+      { word: "ECOSSISTEMA", category: "Geografia" },
+      { word: "LATITUDE", category: "Geografia" },
+      { word: "LONGITUDE", category: "Geografia" },
+      { word: "TECTÔNICA", category: "Geografia" },
+      { word: "LITOSFERA", category: "Geografia" },
+      { word: "GEOMORFOLGIA", category: "Geografia" },
+
+      // Biologia (20)
+      { word: "GENOMA", category: "Biologia" },
+      { word: "ENZIMA", category: "Biologia" },
+      { word: "MITOCÔNDRIA", category: "Biologia" },
+      { word: "CLONAGEM", category: "Biologia" },
+      { word: "ECOSSISTEMA", category: "Biologia" },
+      { word: "CÉLULA", category: "Biologia" },
+      { word: "EVOLUÇÃO", category: "Biologia" },
+      { word: "MUTAÇÃO", category: "Biologia" },
+      { word: "PROTEÍNA", category: "Biologia" },
+      { word: "ORGANISMO", category: "Biologia" },
+      { word: "BACTÉRIA", category: "Biologia" },
+      { word: "GENÉTICA", category: "Biologia" },
+      { word: "NEURÔNIO", category: "Biologia" },
+      { word: "MEMBRANA", category: "Biologia" },
+      { word: "SIMBIOSE", category: "Biologia" },
+      { word: "CLOROPLASTO", category: "Biologia" },
+      { word: "RI BOSSOMA", category: "Biologia" },
+      { word: "MEIOSE", category: "Biologia" },
+      { word: "MITOSE", category: "Biologia" },
+      { word: "BIODIVERSIDADE", category: "Biologia" },
+
+      // Engenharia (20)
+      { word: "ROBÓTICA", category: "Engenharia" },
+      { word: "AUTOMAÇÃO", category: "Engenharia" },
+      { word: "NANOTECNOLOGIA", category: "Engenharia" },
+      { word: "BATERIA", category: "Engenharia" },
+      { word: "SENSORES", category: "Engenharia" },
+      { word: "MECÂNICA", category: "Engenharia" },
+      { word: "ESTRUTURA", category: "Engenharia" },
+      { word: "PROTÓTIPO", category: "Engenharia" },
+      { word: "EFICIÊNCIA", category: "Engenharia" },
+      { word: "TURBINA", category: "Engenharia" },
+      { word: "INOVAÇÃO", category: "Engenharia" },
+      { word: "MECATRÔNICA", category: "Engenharia" },
+      { word: "DESEMPENHO", category: "Engenharia" },
+      { word: "MATERIAIS", category: "Engenharia" },
+      { word: "AERODINÂMICA", category: "Engenharia" },
+      { word: "HIDRÁULICA", category: "Engenharia" },
+      { word: "PNEUMÁTICA", category: "Engenharia" },
+      { word: "TERMODINÂMICA", category: "Engenharia" },
+      { word: "RESISTÊNCIA", category: "Engenharia" },
+      { word: "OTIMIZAÇÃO", category: "Engenharia" },
+
+      // Astrofísica (20)
+      { word: "SUPERNOVA", category: "Astrofísica" },
+      { word: "NEBULOSA", category: "Astrofísica" },
+      { word: "EXOPLANETA", category: "Astrofísica" },
+      { word: "BURACONERO", category: "Astrofísica" },
+      { word: "PULSAR", category: "Astrofísica" },
+      { word: "TELESCÓPIO", category: "Astrofísica" },
+      { word: "QUASAR", category: "Astrofísica" },
+      { word: "ÓRBITA", category: "Astrofísica" },
+      { word: "CONSTELAÇÃO", category: "Astrofísica" },
+      { word: "COSMOLOGIA", category: "Astrofísica" },
+      { word: "SINGULARIDADE", category: "Astrofísica" },
+      { word: "ASTEROIDE", category: "Astrofísica" },
+      { word: "COMETA", category: "Astrofísica" },
+      { word: "GALÁXIA", category: "Astrofísica" },
+      { word: "MAGNETAR", category: "Astrofísica" },
+      { word: "PARALAXE", category: "Astrofísica" },
+      { word: "SOLSTÍCIO", category: "Astrofísica" },
+      { word: "EQUINÓCIO", category: "Astrofísica" },
+      { word: "HELIOSFERA", category: "Astrofísica" },
+      { word: "METEORITO", category: "Astrofísica" },
+
+      // Cibersegurança (20)
+      { word: "MALWARE", category: "Cibersegurança" },
+      { word: "PHISHING", category: "Cibersegurança" },
+      { word: "PROXY", category: "Cibersegurança" },
+      { word: "RANSOMWARE", category: "Cibersegurança" },
+      { word: "BACKDOOR", category: "Cibersegurança" },
+      { word: "CRIPTOGRAFIA", category: "Cibersegurança" },
+      { word: "BOTNET", category: "Cibersegurança" },
+      { word: "FIREWALL", category: "Cibersegurança" },
+      { word: "ANTIVÍRUS", category: "Cibersegurança" },
+      { word: "INVASÃO", category: "Cibersegurança" },
+      { word: "AUTENTICAÇÃO", category: "Cibersegurança" },
+      { word: "EXPLOIT", category: "Cibersegurança" },
+      { word: "KEYLOGGER", category: "Cibersegurança" },
+      { word: "SPYWARE", category: "Cibersegurança" },
+      { word: "VULNERABILIDADE", category: "Cibersegurança" },
+      { word: "TOKEN", category: "Cibersegurança" },
+      { word: "CERTIFICADO", category: "Cibersegurança" },
+      { word: "BIOMETRIA", category: "Cibersegurança" },
+      { word: "FIREWALL", category: "Cibersegurança" },
+      { word: "HONEYPOT", category: "Cibersegurança" }
+    ];
+
+    const MAX_ERRORS = 6;
+    let selectedWord = "";
+    let selectedCategory = "";
+    let guessedLetters = [];
+    let wrongErrors = 0;
+    let gameOver = false;
+
+    // Normaliza strings removendo acentos e caracteres especiais
+    function removeAccents(str) {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function initGame() {
+      // Sorteia nova palavra garantindo que não repita imediatamente a anterior
+      let randomItem;
+      do {
+        randomItem = WORDS_DATABASE[Math.floor(Math.random() * WORDS_DATABASE.length)];
+      } while (WORDS_DATABASE.length > 1 && randomItem.word === selectedWord);
+
+      selectedWord = randomItem.word.toUpperCase();
+      selectedCategory = randomItem.category;
+      guessedLetters = [];
+      wrongErrors = 0;
+      gameOver = false;
+
+      // Restaura visual do botão
+      const btn = document.getElementById('action-btn');
+      btn.textContent = 'NOVA PALAVRA';
+      btn.classList.remove('pulse');
+
+      // Atualizar Categoria e Mensagem
+      document.getElementById('category').textContent = selectedCategory;
+      document.getElementById('message').textContent = '';
+      document.getElementById('message').className = 'message';
+
+      // Renderizar elementos
+      renderWord();
+      renderEnergyCore();
+      renderKeyboard();
+    }
+
+    function renderWord() {
+      const wordContainer = document.getElementById('word-display');
+      wordContainer.innerHTML = '';
+
+      for (let letter of selectedWord) {
+        const box = document.createElement('div');
+        box.className = 'letter-box';
+
+        // Se a letra for um espaço, mantém sem borda
+        if (letter === ' ') {
+          box.style.borderBottom = 'none';
+          box.style.width = '18px';
+          wordContainer.appendChild(box);
+          continue;
+        }
+
+        const normalizedLetter = removeAccents(letter);
+        
+        // Exibe a letra acentuada original se o jogador adivinhou a versão sem acento
+        if (guessedLetters.includes(normalizedLetter)) {
+          box.textContent = letter;
+        } else {
+          box.textContent = '';
+        }
+        wordContainer.appendChild(box);
+      }
+    }
+
+    function renderEnergyCore() {
+      const remainingPct = Math.round(((MAX_ERRORS - wrongErrors) / MAX_ERRORS) * 100);
+      const statusText = document.getElementById('core-status');
+      statusText.textContent = `${remainingPct}%`;
+
+      // Reset total de todas as 6 barras
+      for (let i = 1; i <= MAX_ERRORS; i++) {
+        const bar = document.getElementById(`bar-${i}`);
+        bar.className.baseVal = 'energy-bar';
+
+        if (i > (MAX_ERRORS - wrongErrors)) {
+          bar.classList.add('off');
+        } else if (wrongErrors >= 4) {
+          bar.classList.add('critical');
+        } else if (wrongErrors >= 2) {
+          bar.classList.add('warning');
+        }
+      }
+    }
+
+    function renderKeyboard() {
+      const keyboardContainer = document.getElementById('keyboard');
+      keyboardContainer.innerHTML = '';
+      const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+
+      const normalizedWord = removeAccents(selectedWord);
+
+      alphabet.forEach(letter => {
+        const button = document.createElement('button');
+        button.className = 'key';
+        button.textContent = letter;
+
+        if (guessedLetters.includes(letter)) {
+          button.disabled = true;
+          if (normalizedWord.includes(letter)) {
+            button.classList.add('correct');
+          } else {
+            button.classList.add('wrong');
+          }
+        }
+
+        button.addEventListener('click', () => handleGuess(letter));
+        keyboardContainer.appendChild(button);
+      });
+    }
+
+    function handleGuess(letter) {
+      if (gameOver || guessedLetters.includes(letter)) return;
+
+      guessedLetters.push(letter);
+
+      const normalizedWord = removeAccents(selectedWord);
+
+      if (!normalizedWord.includes(letter)) {
+        wrongErrors++;
+      }
+
+      checkGameStatus();
+      renderWord();
+      renderEnergyCore();
+      renderKeyboard();
+    }
+
+    function checkGameStatus() {
+      const normalizedWord = removeAccents(selectedWord);
+      
+      // Verifica acerto ignorando espaços da contagem
+      const isWon = normalizedWord.split('').every(l => l === ' ' || guessedLetters.includes(l));
+      const messageEl = document.getElementById('message');
+      const btn = document.getElementById('action-btn');
+
+      if (isWon) {
+        gameOver = true;
+        messageEl.textContent = "SISTEMA DECODIFICADO!";
+        messageEl.classList.add('win');
+        btn.textContent = 'JOGAR NOVAMENTE';
+        btn.classList.add('pulse');
+      } else if (wrongErrors >= MAX_ERRORS) {
+        gameOver = true;
+        messageEl.textContent = `FALHA! PALAVRA: ${selectedWord}`;
+        messageEl.classList.add('lose');
+        btn.textContent = 'JOGAR NOVAMENTE';
+        btn.classList.add('pulse');
+      }
+    }
+
+    // Suporte ao teclado físico
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        initGame();
+        return;
+      }
+
+      const key = removeAccents(e.key.toUpperCase());
+      if (/^[A-Z]$/.test(key)) {
+        handleGuess(key);
+      }
+    });
+
+    // Registro do Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker registrado com sucesso!'))
+          .catch(err => console.log('Falha ao registrar Service Worker:', err));
+      });
+    }
+
+    // Inicializar jogo
+    initGame();
+  </script>
+</body>
+</html>
